@@ -8,14 +8,14 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from server import search_logs, detect_anomaly
+from server import _search_logs_impl, _detect_anomaly_impl
 
 def test_search_logs():
     """Test log search tool"""
     print("\n=== Testing search_logs ===")
     
     # Search for ERROR logs
-    result = search_logs("ERROR", "5m", "default")
+    result = _search_logs_impl("ERROR", "5m", "default")
     print(f"Query: {result['query']}")
     print(f"Matches found: {result['match_count']}")
     
@@ -31,7 +31,7 @@ def test_detect_anomaly():
     print("\n=== Testing detect_anomaly ===")
     
     # Detect ERROR pattern
-    result = detect_anomaly("ERROR", 0.3)
+    result = _detect_anomaly_impl("ERROR", 0.3)
     print(f"Pattern: {result['pattern']}")
     print(f"Frequency: {result['frequency']}")
     print(f"Occurrences: {result['occurrence_count']}/{result['total_logs_analyzed']}")

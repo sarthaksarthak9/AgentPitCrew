@@ -4,7 +4,10 @@ PrometheusMetrics MCP Server
 Provides tools to query Prometheus metrics and alerts for SRE monitoring
 """
 
-from fastmcp import FastMCP
+try:
+    from fastmcp import FastMCP
+except ImportError:
+    raise ImportError("fastmcp module is not installed. Install it using: pip install fastmcp")
 from datetime import datetime
 from typing import Optional
 import random
