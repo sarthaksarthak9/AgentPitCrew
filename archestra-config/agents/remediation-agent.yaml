@@ -1,0 +1,124 @@
+apiVersion: archestra.ai/v1alpha1
+kind: Agent
+metadata:
+  name: remediation-agent
+  namespace: archestra-system
+  labels:
+    app: sre-dashboard
+    role: remediation
+spec:
+  # Use Gemini 1.5 Pro for careful remediation decisions
+  model: gemini-1.5-pro-002
+  
+  # Agent's role and behavior
+  systemPrompt: |
+    You are an SRE Remediation Agent responsible for executing safe Kubernetes operations.
+    
+    Your responsibilities:
+    1. Receive handoffs from AlertTriageAgent with full diagnostic context
+    2. Validate that remediation actions are safe and appropriate
+    3. Execute scaling or pod restart operations using k8s-remediator
+    4. Always start in DRY-RUN mode, then confirm before real execution
+    5. Log all actions to the audit trail
+    
+    Security rules (CRITICAL):
+    - NEVER scale deployments to 0 replicas
+    - NEVER touch kube-system, kube-public, or kube-node-lease namespaces
+    - NEVER restart control plane pods
+    - Always validate namespace and deployment exist before acting
+    - If unsure, ask for human approval
+    
+    Remediation patterns:
+    - High CPU + no errors → Scale up replicas (add 2-3 replicas)
+    - Crash loop detected → Restart pod
+    - Memory pressure → Scale up replicas
+    - Database connection errors → Restart pod, then scale if persists
+    
+    Be cautious and methodical. Explain your reasoning before each action.
+  
+  # MCP servers this agent can access
+  mcpServers:
+    - name: k8s-remediator
+      maxConcurrentCalls: 2  # Limit concurrent remediation
+      timeout: 120s
+    # Can also query logs for verification
+    - name: log-analyzer
+      maxConcurrentCalls: 1
+      timeout: 30s
+  
+  # This agent only responds to A2A handoffs (no scheduled/webhook triggers)
+  triggers:
+    - type: a2a-handoff
+      enabled: true
+      fromAgents:
+        - alert-triage-agent
+  
+  # Agent-to-Agent (A2A) configuration
+  a2a:
+    enabled: true
+    acceptHandoffsFrom:
+      - alert-triage-agent
+    requiresApproval: false  # Auto-execute in dry-run mode
+    handoffTimeout: 300s
+  
+  # Observability configuration
+  observability:
+    tracing:
+      enabled: true
+      exporter: otlp
+      endpoint: "http://tempo:4317"
+    metrics:
+      enabled: true
+      port: 9091
+      path: /metrics
+    logging:
+      level: info
+      format: json
+    auditLog:
+      enabled: true
+      destination: persistent-volume
+      retention: 30d
+  
+  # Security and resource limits
+  security:
+    allowedActions:
+      - scale_deployment
+      - restart_pod
+      - get_audit_log
+      - search_logs  # For post-action verification
+    
+    # Explicit action blocklist
+    blockedActions:
+      - action: scale_deployment
+        conditions:
+          - replicas: 0
+            reason: "Never scale to zero replicas"
+          - namespace: kube-system
+            reason: "System namespace is protected"
+      
+      - action: restart_pod
+        conditions:
+          - podNamePattern: ".*control-plane.*"
+            reason: "Control plane pods are protected"
+          - namespace: kube-system
+            reason: "System namespace is protected"
+    
+    # Rate limiting to prevent cascading failures
+    rateLimit:
+      maxActionsPerMinute: 10
+      cooldownPeriod: 60s
+  
+  # Vault integration for K8s credentials
+  vault:
+    enabled: true
+    address: "http://vault:8200"
+    role: k8s-remediator
+    secretPath: secret/kubernetes/credentials
+  
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "200m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
