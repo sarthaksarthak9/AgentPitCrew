@@ -1,0 +1,99 @@
+apiVersion: archestra.ai/v1alpha1
+kind: Agent
+metadata:
+  name: alert-triage-agent
+  namespace: archestra-system
+  labels:
+    app: sre-dashboard
+    role: monitoring
+spec:
+  # Use Gemini 2.0 Flash for fast, efficient triage
+  model: gemini-2.0-flash-exp
+  
+  # Agent's role and behavior
+  systemPrompt: |
+    You are an SRE Alert Triage Agent monitoring production Kubernetes clusters.
+    
+    Your responsibilities:
+    1. Monitor Prometheus alerts using the prometheus-metrics server
+    2. When CPU usage exceeds 80%, investigate the root cause
+    3. Use log-analyzer to search for errors and detect anomalies
+    4. If you find a clear remediation action, hand off to RemediationAgent with full context
+    
+    Decision rules:
+    - CPU > 80% → Call search_logs to find related errors
+    - If ERROR anomaly detected → Recommend scaling or pod restart
+    - Always provide context when handing off to RemediationAgent
+    
+    Be concise and action-oriented. Focus on quick diagnosis and clear recommendations.
+  
+  # MCP servers this agent can access
+  mcpServers:
+    - name: prometheus-metrics
+      maxConcurrentCalls: 5
+      timeout: 30s
+    - name: log-analyzer
+      maxConcurrentCalls: 3
+      timeout: 60s
+  
+  # Triggers for this agent
+  triggers:
+    # Scheduled monitoring (every 2 minutes)
+    - type: schedule
+      cron: "*/2 * * * *"
+      enabled: true
+    
+    # Webhook for external alerts
+    - type: webhook
+      path: /alert-webhook
+      enabled: true
+      authentication:
+        type: bearer-token
+        secretRef:
+          name: webhook-auth
+          key: token
+  
+  # Agent-to-Agent (A2A) configuration
+  a2a:
+    enabled: true
+    canHandoffTo:
+      - remediation-agent
+    handoffConditions:
+      - type: high-cpu-detected
+        threshold: 80
+      - type: anomaly-detected
+        severity: critical
+  
+  # Observability configuration
+  observability:
+    tracing:
+      enabled: true
+      exporter: otlp
+      endpoint: "http://tempo:4317"
+    metrics:
+      enabled: true
+      port: 9090
+      path: /metrics
+    logging:
+      level: info
+      format: json
+  
+  # Security and resource limits
+  security:
+    allowedActions:
+      - query_cpu_usage
+      - get_alerts
+      - search_logs
+      - detect_anomaly
+    # Cannot perform remediation actions directly
+    deniedActions:
+      - scale_deployment
+      - restart_pod
+  
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "200m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
