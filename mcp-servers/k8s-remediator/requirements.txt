@@ -1,0 +1,16 @@
+# Copy this file to each MCP server directory
+# This is a shared requirements.txt for all servers
+
+# FastMCP - Model Context Protocol framework
+fastmcp>=0.2.0
+
+# Optional: Uncomment for real integrations in Phase 4
+# prometheus-api-client>=0.5.0  # For real Prometheus
+# kubernetes>=28.0.0  # For real K8s operations
+
+# Development/Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+
+# Logging and utilities
+python-dateutil>=2.8.0
