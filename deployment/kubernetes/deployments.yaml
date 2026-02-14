@@ -1,0 +1,102 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus-metrics-server
+  namespace: archestra-system
+  labels:
+    app: prometheus-metrics
+    component: mcp-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus-metrics
+  template:
+    metadata:
+      labels:
+        app: prometheus-metrics
+        component: mcp-server
+    spec:
+      containers:
+        - name: server
+          image: agentpitcrew/prometheus-metrics:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: PROMETHEUS_URL
+              value: "http://prometheus:9090"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: log-analyzer-server
+  namespace: archestra-system
+  labels:
+    app: log-analyzer
+    component: mcp-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: log-analyzer
+  template:
+    metadata:
+      labels:
+        app: log-analyzer
+        component: mcp-server
+    spec:
+      containers:
+        - name: server
+          image: agentpitcrew/log-analyzer:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: K8S_NAMESPACE
+              value: "default"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "512Mi"
+              cpu: "400m"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8s-remediator-server
+  namespace: archestra-system
+  labels:
+    app: k8s-remediator
+    component: mcp-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: k8s-remediator
+  template:
+    metadata:
+      labels:
+        app: k8s-remediator
+        component: mcp-server
+    spec:
+      serviceAccountName: k8s-remediator-sa
+      containers:
+        - name: server
+          image: agentpitcrew/k8s-remediator:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: DRY_RUN_MODE
+              value: "true"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
