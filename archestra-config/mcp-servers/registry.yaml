@@ -1,0 +1,95 @@
+apiVersion: archestra.ai/v1alpha1
+kind: MCPServerRegistry
+metadata:
+  name: sre-mcp-servers
+  namespace: archestra-system
+spec:
+  servers:
+    # Prometheus Metrics Server
+    - name: prometheus-metrics
+      version: 1.0.0
+      description: "Query Prometheus metrics and alerts for CPU monitoring"
+      transport: stdio
+      command: python
+      args:
+        - /app/server.py
+      workingDirectory: /app
+      env:
+        - name: PROMETHEUS_URL
+          value: "http://prometheus:9090"  # Will be configured per deployment
+      resources:
+        requests:
+          memory: "128Mi"
+          cpu: "100m"
+        limits:
+          memory: "256Mi"
+          cpu: "200m"
+      tools:
+        - name: query_cpu_usage
+          description: "Query CPU usage percentage for a cluster namespace"
+        - name: get_alerts
+          description: "Get active Prometheus alerts by namespace and severity"
+      
+    # Log Analyzer Server
+    - name: log-analyzer
+      version: 1.0.0
+      description: "Search Kubernetes logs and detect anomalies"
+      transport: stdio
+      command: python
+      args:
+        - /app/server.py
+      workingDirectory: /app
+      env:
+        - name: K8S_NAMESPACE
+          value: "default"
+      resources:
+        requests:
+          memory: "256Mi"
+          cpu: "200m"
+        limits:
+          memory: "512Mi"
+          cpu: "400m"
+      tools:
+        - name: search_logs
+          description: "Search pod logs for specific patterns or keywords"
+        - name: detect_anomaly
+          description: "Detect anomalies in log patterns using frequency analysis"
+    
+    # Kubernetes Remediator Server  
+    - name: k8s-remediator
+      version: 1.0.0
+      description: "Execute Kubernetes remediation actions with security guardrails"
+      transport: stdio
+      command: python
+      args:
+        - /app/server.py
+      workingDirectory: /app
+      env:
+        - name: KUBECONFIG
+          value: "/var/run/secrets/kubernetes.io/serviceaccount"
+        - name: DRY_RUN_MODE
+          value: "true"  # Safety: start in dry-run mode
+      serviceAccount: k8s-remediator-sa
+      resources:
+        requests:
+          memory: "128Mi"
+          cpu: "100m"
+        limits:
+          memory: "256Mi"
+          cpu: "200m"
+      tools:
+        - name: scale_deployment
+          description: "Scale Kubernetes deployment to specified replica count"
+        - name: restart_pod
+          description: "Restart a pod by deleting it (recreated by controller)"
+        - name: get_audit_log
+          description: "Retrieve audit log of all remediation actions"
+      securityPolicy:
+        allowedNamespaces:
+          - default
+          - production
+          - staging
+        blockedNamespaces:
+          - kube-system
+          - kube-public
+          - kube-node-lease
