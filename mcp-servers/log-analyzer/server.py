@@ -5,7 +5,7 @@ Provides tools to search logs and detect anomalies in Kubernetes pods
 """
 
 from fastmcp import FastMCP
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 import random
 import re
 
@@ -61,7 +61,7 @@ def _search_logs_impl(query: str, time_range: str = "5m", namespace: str = "defa
         "namespace": namespace,
         "match_count": len(matching_logs),
         "logs": matching_logs,
-        "search_timestamp": datetime.now(UTC).isoformat()
+        "search_timestamp": datetime.now(timezone.utc).isoformat()
     }
 
 # MCP TOOL
@@ -125,7 +125,7 @@ def _detect_anomaly_impl(pattern: str, threshold: float = 0.8) -> dict:
         "spikes_detected": len(spikes),
         "spike_details": spikes,
         "recommendation": f"Investigate {pattern} pattern - detected {len(spikes)} spike(s)" if spikes else "No anomalous behavior detected",
-        "analysis_timestamp": datetime.now(UTC).isoformat()
+        "analysis_timestamp": datetime.now(timezone.utc).isoformat()
     }
 
 # MCP TOOL
