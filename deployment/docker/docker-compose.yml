@@ -1,0 +1,92 @@
+version: '3.8'
+
+services:
+  # PrometheusMetrics MCP Server
+  prometheus-metrics:
+    build:
+      context: ./mcp-servers/prometheus-metrics
+      dockerfile: Dockerfile
+    image: agentpitcrew/prometheus-metrics:latest
+    container_name: prometheus-metrics
+    environment:
+      - PROMETHEUS_URL=http://prometheus:9090
+    networks:
+      - archestra-network
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import sys; sys.exit(0)" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # LogAnalyzer MCP Server
+  log-analyzer:
+    build:
+      context: ./mcp-servers/log-analyzer
+      dockerfile: Dockerfile
+    image: agentpitcrew/log-analyzer:latest
+    container_name: log-analyzer
+    environment:
+      - K8S_NAMESPACE=default
+    networks:
+      - archestra-network
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import sys; sys.exit(0)" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # K8sRemediator MCP Server
+  k8s-remediator:
+    build:
+      context: ./mcp-servers/k8s-remediator
+      dockerfile: Dockerfile
+    image: agentpitcrew/k8s-remediator:latest
+    container_name: k8s-remediator
+    environment:
+      - DRY_RUN_MODE=true
+    networks:
+      - archestra-network
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import sys; sys.exit(0)" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Prometheus (for demo - optional)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - archestra-network
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+
+  # Grafana (for demo - optional)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    networks:
+      - archestra-network
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+
+networks:
+  archestra-network:
+    driver: bridge
+
+volumes:
+  prometheus-data:
+  grafana-data:
