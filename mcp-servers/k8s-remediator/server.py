@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from fastmcp import FastMCP
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 from typing import Any
 import json
 import re
@@ -20,7 +20,7 @@ audit_log: list[dict[str, Any]] = []
 
 def log_action(action: str, target: str, result: str, details: dict[str, Any]):
     entry = {
-        "timestamp": datetime.now(UTC).isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "action": action,
         "target": target,
         "result": result,
