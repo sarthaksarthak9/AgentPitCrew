@@ -1,0 +1,93 @@
+{{- if .Values.prometheusMetrics.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus-metrics-server
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app: prometheus-metrics
+    component: mcp-server
+spec:
+  replicas: {{ .Values.prometheusMetrics.replicas }}
+  selector:
+    matchLabels:
+      app: prometheus-metrics
+  template:
+    metadata:
+      labels:
+        app: prometheus-metrics
+        component: mcp-server
+    spec:
+      containers:
+        - name: server
+          image: "{{ .Values.images.prometheusMetrics.repository }}:{{ .Values.images.prometheusMetrics.tag }}"
+          imagePullPolicy: {{ .Values.images.prometheusMetrics.pullPolicy }}
+          env:
+            - name: PROMETHEUS_URL
+              value: {{ .Values.prometheusMetrics.env.prometheusUrl | quote }}
+          resources:
+            {{- toYaml .Values.prometheusMetrics.resources | nindent 12 }}
+{{- end }}
+---
+{{- if .Values.logAnalyzer.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: log-analyzer-server
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app: log-analyzer
+    component: mcp-server
+spec:
+  replicas: {{ .Values.logAnalyzer.replicas }}
+  selector:
+    matchLabels:
+      app: log-analyzer
+  template:
+    metadata:
+      labels:
+        app: log-analyzer
+        component: mcp-server
+    spec:
+      containers:
+        - name: server
+          image: "{{ .Values.images.logAnalyzer.repository }}:{{ .Values.images.logAnalyzer.tag }}"
+          imagePullPolicy: {{ .Values.images.logAnalyzer.pullPolicy }}
+          env:
+            - name: K8S_NAMESPACE
+              value: {{ .Values.logAnalyzer.env.k8sNamespace | quote }}
+          resources:
+            {{- toYaml .Values.logAnalyzer.resources | nindent 12 }}
+{{- end }}
+---
+{{- if .Values.k8sRemediator.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8s-remediator-server
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app: k8s-remediator
+    component: mcp-server
+spec:
+  replicas: {{ .Values.k8sRemediator.replicas }}
+  selector:
+    matchLabels:
+      app: k8s-remediator
+  template:
+    metadata:
+      labels:
+        app: k8s-remediator
+        component: mcp-server
+    spec:
+      serviceAccountName: {{ .Values.k8sRemediator.serviceAccount.name }}
+      containers:
+        - name: server
+          image: "{{ .Values.images.k8sRemediator.repository }}:{{ .Values.images.k8sRemediator.tag }}"
+          imagePullPolicy: {{ .Values.images.k8sRemediator.pullPolicy }}
+          env:
+            - name: DRY_RUN_MODE
+              value: {{ .Values.k8sRemediator.env.dryRunMode | quote }}
+          resources:
+            {{- toYaml .Values.k8sRemediator.resources | nindent 12 }}
+{{- end }}

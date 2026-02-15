@@ -1,0 +1,81 @@
+# Default values for sre-dashboard Helm chart
+
+# Global settings
+global:
+  namespace: archestra-system
+
+# MCP Server images
+images:
+  prometheusMetrics:
+    repository: agentpitcrew/prometheus-metrics
+    tag: latest
+    pullPolicy: IfNotPresent
+  
+  logAnalyzer:
+    repository: agentpitcrew/log-analyzer
+    tag: latest
+    pullPolicy: IfNotPresent
+  
+  k8sRemediator:
+    repository: agentpitcrew/k8s-remediator
+    tag: latest
+    pullPolicy: IfNotPresent
+
+# PrometheusMetrics server configuration
+prometheusMetrics:
+  enabled: true
+  replicas: 1
+  env:
+    prometheusUrl: "http://prometheus:9090"
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+
+# LogAnalyzer server configuration
+logAnalyzer:
+  enabled: true
+  replicas: 1
+  env:
+    k8sNamespace: "default"
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "200m"
+    limits:
+      memory: "512Mi"
+      cpu: "400m"
+
+# K8sRemediator server configuration
+k8sRemediator:
+  enabled: true
+  replicas: 1
+  serviceAccount:
+    create: true
+    name: k8s-remediator-sa
+  env:
+    dryRunMode: "true"
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+
+# RBAC configuration
+rbac:
+  create: true
+  # Allowed namespaces for remediation
+  allowedNamespaces:
+    - default
+    - production
+    - staging
+  # Blocked namespaces (never allow)
+  blockedNamespaces:
+    - kube-system
+    - kube-public
+    - kube-node-lease
