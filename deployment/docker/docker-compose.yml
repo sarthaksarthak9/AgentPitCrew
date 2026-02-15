@@ -1,10 +1,8 @@
-version: '3.8'
-
 services:
   # PrometheusMetrics MCP Server
   prometheus-metrics:
     build:
-      context: ./mcp-servers/prometheus-metrics
+      context: ../../mcp-servers/prometheus-metrics
       dockerfile: Dockerfile
     image: agentpitcrew/prometheus-metrics:latest
     container_name: prometheus-metrics
@@ -22,7 +20,7 @@ services:
   # LogAnalyzer MCP Server
   log-analyzer:
     build:
-      context: ./mcp-servers/log-analyzer
+      context: ../../mcp-servers/log-analyzer
       dockerfile: Dockerfile
     image: agentpitcrew/log-analyzer:latest
     container_name: log-analyzer
@@ -40,7 +38,7 @@ services:
   # K8sRemediator MCP Server
   k8s-remediator:
     build:
-      context: ./mcp-servers/k8s-remediator
+      context: ../../mcp-servers/k8s-remediator
       dockerfile: Dockerfile
     image: agentpitcrew/k8s-remediator:latest
     container_name: k8s-remediator

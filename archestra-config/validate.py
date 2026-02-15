@@ -80,7 +80,8 @@ def main():
     print("Archestra Configuration Validation - Phase 2")
     print("=" * 60)
     
-    base_dir = Path("/home/sarthak/AgentPitCrew/archestra-config")
+    # Use current script directory dynamically
+    base_dir = Path(__file__).parent
     
     files_to_validate = [
         base_dir / "mcp-servers" / "registry.yaml",
